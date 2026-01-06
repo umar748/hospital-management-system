@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>User Dashboard - Hospital Management System</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="/assets.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="/">🏥 Hospital Management System</a>
+      <div class="navbar-nav">
+        <a class="nav-link active" href="/user.html"><i class="bi bi-speedometer2"></i> Dashboard</a>
+        <a class="nav-link" href="/patients.html"><i class="bi bi-people"></i> Patients</a>
+        <a class="nav-link" href="/doctors.html"><i class="bi bi-person-badge"></i> Doctors</a>
+        <a class="nav-link" href="/appointments.html"><i class="bi bi-calendar-event"></i> Appointments</a>
+        <span id="navUser" class="navbar-text ms-2"></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container py-4">
+    <div class="hero p-4 mb-4">
+      <h3 id="greeting" class="mb-2"></h3>
+      <p class="lead">Quick access to patients, doctors and appointments with a modern UI.</p>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card p-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-uppercase small badge-soft">Patients</div>
+              <div id="kpiPatients" class="display-6">0</div>
+            </div>
+            <i class="bi bi-people" style="font-size:2rem;color:#93c5fd"></i>
+          </div>
+          <a href="/patients.html" class="btn btn-primary mt-3">Manage Patients</a>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-uppercase small badge-soft">Doctors</div>
+              <div id="kpiDoctors" class="display-6">0</div>
+            </div>
+            <i class="bi bi-person-badge" style="font-size:2rem;color:#86efac"></i>
+          </div>
+          <a href="/doctors.html" class="btn btn-success mt-3">Manage Doctors</a>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-uppercase small badge-soft">Appointments</div>
+              <div id="kpiAppointments" class="display-6">0</div>
+            </div>
+            <i class="bi bi-calendar-event" style="font-size:2rem;color:#facc15"></i>
+          </div>
+          <a href="/appointments.html" class="btn btn-warning mt-3">Manage Appointments</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+  <script src="/assets.js"></script>
+  <script>
+  const API = (location.port === '5000' ? '/api' : 'http://127.0.0.1:5000/api');
+  async function fetchJson(path, opts){
+    const res = await fetch(API + path, opts);
+    if(!res.ok){
+      const ct = res.headers.get('content-type') || '';
+      let msg;
+      if(ct.includes('application/json')){ const j = await res.json(); msg = j.error || j.message || res.statusText; }
+      else { msg = (await res.text()) || res.statusText; }
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+  const u = getUser();
+  if(!u){ location.href = '/login.html'; }
+  document.getElementById('greeting').textContent = `Welcome, ${u.name}`;
+  async function loadStats(){
+    try{
+      const [patients, doctors, appts] = await Promise.all([
+        fetchJson('/patients'), fetchJson('/doctors'), fetchJson('/appointments')
+      ]);
+      document.getElementById('kpiPatients').textContent = patients.length;
+      document.getElementById('kpiDoctors').textContent = doctors.length;
+      document.getElementById('kpiAppointments').textContent = appts.length;
+    }catch(e){ showToast(e.message || 'Failed to load', 'danger'); }
+  }
+  loadStats();
+  </script>
+</body>
+</html>

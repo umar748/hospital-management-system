@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Signup - Hospital Management System</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="/assets.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="/">🏥 Hospital Management System</a>
+      <div class="navbar-nav">
+        <a class="nav-link" href="/"><i class="bi bi-house"></i> Home</a>
+        <a class="nav-link" href="/admin.html"><i class="bi bi-shield-lock"></i> Admin</a>
+        <a class="nav-link active" href="/signup.html"><i class="bi bi-person-plus"></i> Signup</a>
+        <a class="nav-link" href="/login.html"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+        <span id="navUser" class="navbar-text ms-2"></span>
+      </div>
+    </div>
+  </nav>
+  <div class="container py-5" style="max-width:560px">
+    <div class="card p-4">
+      <h3 class="mb-3 d-flex align-items-center gap-2"><i class="bi bi-person-plus"></i> Create Account</h3>
+      <input id="name" class="form-control my-2" placeholder="Full Name">
+      <input id="email" class="form-control my-2" placeholder="Email" type="email">
+      <input id="password" class="form-control my-2" placeholder="Password" type="password">
+      <div class="my-2">
+        <label class="form-label">Account Type</label>
+        <select id="roleSel" class="form-select">
+          <option value="user" selected>User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button id="signupBtn" class="btn btn-primary mt-2">Signup</button>
+      <div class="mt-2"><small>Already have an account? <a href="/login.html">Login</a></small></div>
+    </div>
+  </div>
+  <div id="toastContainer" class="toast-container"></div>
+  <script src="/assets.js"></script>
+  <script>
+  const API = (location.port === '5000' ? '/api' : 'http://127.0.0.1:5000/api');
+  async function fetchJson(path, opts){
+    const res = await fetch(API + path, opts);
+    if(!res.ok){
+      const ct = res.headers.get('content-type') || '';
+      let msg;
+      if(ct.includes('application/json')){
+        const j = await res.json(); msg = j.error || j.message || res.statusText;
+      } else {
+        msg = (await res.text()) || res.statusText;
+      }
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+  async function signup(){
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if(!name || !email || !password) return showToast('All fields required','danger');
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return showToast('Invalid email','danger');
+    if(password.length < 6) return showToast('Password must be 6+ chars','danger');
+    document.getElementById('signupBtn').disabled = true;
+    try{
+      const role = document.getElementById('roleSel').value;
+      if(role==='admin' && !confirm('Create an Admin account? Only one admin is allowed.')){ document.getElementById('signupBtn').disabled = false; return; }
+      const res = await fetchJson('/auth/signup', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, email, password, role})});
+      localStorage.setItem('hms_user', JSON.stringify(res));
+      showToast('Account created','success');
+      location.href = '/';
+    }catch(e){
+      showToast(e.message || 'Signup failed','danger');
+    }finally{
+      document.getElementById('signupBtn').disabled = false;
+    }
+  }
+  document.getElementById('signupBtn').addEventListener('click', signup);
+  </script>
+</body>
+</html>

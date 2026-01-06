@@ -1,0 +1,28 @@
+:root{--bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--primary:#2563eb;--success:#16a34a;--danger:#dc2626;--warning:#f59e0b}
+html,body{height:100%}
+body{background:linear-gradient(180deg,#0b1220,#111827 30%,#0b1220);color:var(--text)}
+.navbar{border-bottom:1px solid #334155}
+.navbar-dark.bg-dark{background:linear-gradient(90deg,#0b1220,#111827)}
+.navbar .nav-link{color:#cbd5e1;margin-right:6px;padding:8px 12px;border-radius:10px;border:1px solid transparent;display:inline-flex;align-items:center;gap:6px;transition:all .2s ease}
+.navbar .nav-link:hover{color:#fff;background-color:#111827;border-color:#334155}
+.navbar .nav-link.active{color:#fff;background-color:#1f2937;border-color:#334155}
+.navbar-brand{font-weight:600}
+.card{background-color:var(--card);border:1px solid #1f2937;border-radius:12px}
+.card h5{color:var(--text)}
+.form-control,.form-select{background-color:#0b1220;border:1px solid #334155;color:var(--text)}
+.form-control::placeholder,.form-select{color:var(--muted)}
+.btn{border-radius:10px}
+.btn-primary{background-color:var(--primary);border-color:var(--primary)}
+.btn-success{background-color:var(--success);border-color:var(--success)}
+.btn-danger{background-color:var(--danger);border-color:var(--danger)}
+.btn-warning{background-color:var(--warning);border-color:var(--warning);color:#111827}
+table{color:var(--text)}
+thead th{color:var(--muted);font-weight:500}
+.table-dark{--bs-table-bg:var(--card);--bs-table-border-color:#1f2937}
+.empty{color:var(--muted);text-align:center;padding:20px}
+.hero{background:radial-gradient(1200px 400px at 10% -50%,#1d4ed8,transparent),radial-gradient(800px 400px at 90% -50%,#9333ea,transparent);border-radius:16px;border:1px solid #1f2937}
+.hero .lead{color:#cbd5e1}
+.badge-soft{background-color:#0b1220;border:1px solid #334155;color:#cbd5e1}
+.toast-container{position:fixed;top:16px;right:16px;z-index:1080}
+.spinner{width:1rem;height:1rem;border:.2rem solid #cbd5e1;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}

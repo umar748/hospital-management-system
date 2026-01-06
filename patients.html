@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Patients - Hospital Management System</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="/assets.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="/">🏥 Hospital Management System</a>
+      <div class="navbar-nav">
+        <a class="nav-link" href="/"><i class="bi bi-house"></i> Home</a>
+        <a class="nav-link active" href="/patients.html"><i class="bi bi-people"></i> Patients</a>
+        <a class="nav-link" href="/doctors.html"><i class="bi bi-person-badge"></i> Doctors</a>
+        <a class="nav-link" href="/appointments.html"><i class="bi bi-calendar-event"></i> Appointments</a>
+        <a class="nav-link" href="/admin.html"><i class="bi bi-shield-lock"></i> Admin</a>
+        <a class="nav-link" href="/signup.html"><i class="bi bi-person-plus"></i> Signup</a>
+        <a class="nav-link" href="/login.html"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+        <span id="navUser" class="navbar-text ms-2"></span>
+      </div>
+    </div>
+  </nav>
+  <div class="container py-4">
+    <h2 class="mb-3">Patients</h2>
+    <div class="row">
+      <div class="col-md-4">
+        <div class="card mb-3">
+          <div class="card-body">
+            <h5 class="d-flex align-items-center gap-2"><i class="bi bi-person-plus"></i> Add Patient</h5>
+            <input id="patientName" class="form-control my-1" placeholder="Name">
+            <input id="patientAge" class="form-control my-1" placeholder="Age" type="number">
+            <input id="patientContact" class="form-control my-1" placeholder="Contact">
+            <input id="patientAddress" class="form-control my-1" placeholder="Address">
+            <button id="addPatientBtn" class="btn btn-primary mt-2">Add Patient</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-2">All Patients</h5>
+            <input id="patientFilter" class="form-control form-control-sm" placeholder="Search" style="width:200px">
+          </div>
+          <div class="table-responsive">
+            <table class="table table-dark table-striped align-middle" id="patientsTable">
+              <thead><tr><th>Name</th><th>Age</th><th>Contact</th><th>Address</th><th style="width:120px">Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<div id="toastContainer" class="toast-container"></div>
+<script src="/assets.js"></script>
+<script>
+const API = (location.port === '5000' ? '/api' : 'http://127.0.0.1:5000/api');
+async function fetchJson(path, opts){
+  const res = await fetch(API + path, opts);
+  if(!res.ok){
+    const ct = res.headers.get('content-type') || '';
+    let msg;
+    if(ct.includes('application/json')){
+      const j = await res.json(); msg = j.error || j.message || res.statusText;
+    } else {
+      msg = (await res.text()) || res.statusText;
+    }
+    throw new Error(msg);
+  }
+  return res.json();
+}
+async function loadPatients(){
+  const patients = await fetchJson('/patients');
+  const body = document.querySelector('#patientsTable tbody');
+  body.innerHTML = '';
+  if(patients.length===0){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="5" class="empty">No patients</td>`;
+    body.appendChild(tr);
+  }else{
+    patients.forEach(p=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${p.name}</td><td>${p.age}</td><td>${p.contact||''}</td><td>${p.address||''}</td>
+                      <td><button class="btn btn-sm btn-danger" onclick="deletePatient('${p.id}')"><i class="bi bi-trash"></i></button></td>`;
+      body.appendChild(tr);
+    });
+  }
+}
+async function addPatient(){
+  const name = document.getElementById('patientName').value.trim();
+  const age = parseInt(document.getElementById('patientAge').value) || 0;
+  const contact = document.getElementById('patientContact').value.trim();
+  const address = document.getElementById('patientAddress').value.trim();
+  if(!name) return alert('Name required');
+  document.getElementById('addPatientBtn').disabled = true;
+  await fetchJson('/patients', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, age, contact, address})});
+  document.getElementById('patientName').value='';
+  document.getElementById('patientAge').value='';
+  document.getElementById('patientContact').value='';
+  document.getElementById('patientAddress').value='';
+  document.getElementById('addPatientBtn').disabled = false;
+  showToast('Patient added', 'success');
+  loadPatients();
+}
+async function deletePatient(id){
+  if(!confirm('Delete patient and related appointments?')) return;
+  await fetchJson(`/patients/${id}`, {method:'DELETE'});
+  showToast('Patient deleted', 'warning');
+  loadPatients();
+}
+document.getElementById('addPatientBtn').addEventListener('click', addPatient);
+document.getElementById('patientFilter').addEventListener('input', e=>{
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('#patientsTable tbody tr').forEach(tr=>{
+    if(tr.querySelector('.empty')) return;
+    tr.style.display = tr.children[0].textContent.toLowerCase().includes(q) ? '' : 'none';
+  })
+})
+loadPatients();
+</script>
+</body>
+</html>

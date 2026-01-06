@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Appointments - Hospital Management System</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="/assets.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="/">🏥 Hospital Management System</a>
+      <div class="navbar-nav">
+        <a class="nav-link" href="/"><i class="bi bi-house"></i> Home</a>
+        <a class="nav-link" href="/patients.html"><i class="bi bi-people"></i> Patients</a>
+        <a class="nav-link" href="/doctors.html"><i class="bi bi-person-badge"></i> Doctors</a>
+        <a class="nav-link active" href="/appointments.html"><i class="bi bi-calendar-event"></i> Appointments</a>
+        <a class="nav-link" href="/admin.html"><i class="bi bi-shield-lock"></i> Admin</a>
+        <a class="nav-link" href="/signup.html"><i class="bi bi-person-plus"></i> Signup</a>
+        <a class="nav-link" href="/login.html"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+        <span id="navUser" class="navbar-text ms-2"></span>
+      </div>
+    </div>
+  </nav>
+  <div class="container py-4">
+    <h2 class="mb-3">Appointments</h2>
+    <div class="row">
+      <div class="col-md-4">
+        <div class="card mb-3">
+          <div class="card-body">
+            <h5 class="d-flex align-items-center gap-2"><i class="bi bi-calendar-event"></i> Schedule Appointment</h5>
+            <select id="selPatient" class="form-select my-1"></select>
+            <select id="selDoctor" class="form-select my-1"></select>
+            <input id="apptDate" class="form-control my-1" type="date">
+            <input id="apptTime" class="form-control my-1" type="time" step="900">
+            <button id="scheduleBtn" class="btn btn-warning mt-2">Schedule</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="mb-3">
+          <h5>All Appointments</h5>
+          <div class="table-responsive">
+            <table class="table table-dark table-striped align-middle" id="appointmentsTable">
+              <thead><tr><th>Date & Time</th><th>Patient</th><th>Doctor</th><th style="width:120px">Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card p-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0">Quick Slots</h5>
+            <div class="text-muted small">Select patient and doctor first</div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle" id="slotsTable">
+              <thead><tr><th style="width:160px">Date</th><th>Times</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<div id="toastContainer" class="toast-container"></div>
+<script src="/assets.js"></script>
+<script>
+const API = (location.port === '5000' ? '/api' : 'http://127.0.0.1:5000/api');
+async function fetchJson(path, opts){
+  const res = await fetch(API + path, opts);
+  if(!res.ok){
+    const ct = res.headers.get('content-type') || '';
+    let msg;
+    if(ct.includes('application/json')){
+      const j = await res.json(); msg = j.error || j.message || res.statusText;
+    } else {
+      msg = (await res.text()) || res.statusText;
+    }
+    throw new Error(msg);
+  }
+  return res.json();
+}
+let appts = [];
+async function loadAll(){
+  const patients = await fetchJson('/patients');
+  const doctors = await fetchJson('/doctors');
+  appts = await fetchJson('/appointments');
+  const selP = document.getElementById('selPatient');
+  selP.innerHTML = '<option value="">Select patient</option>';
+  patients.forEach(p=>{
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.text = `${p.name} (ID ${p.id})`;
+    selP.appendChild(opt);
+  });
+  const selD = document.getElementById('selDoctor');
+  selD.innerHTML = '<option value="">Select doctor</option>';
+  doctors.forEach(d=>{
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.text = `${d.name} (${d.specialty})`;
+    selD.appendChild(opt);
+  });
+  const body = document.querySelector('#appointmentsTable tbody');
+  body.innerHTML = '';
+  if(appts.length===0){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="4" class="empty">No appointments</td>`;
+    body.appendChild(tr);
+  }else{
+    appts.forEach(a=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${a.datetime}</td><td>${a.patient_name} (ID ${a.patient_id})</td><td>${a.doctor_name} (ID ${a.doctor_id})</td>
+                      <td><button class="btn btn-sm btn-danger" onclick="deleteAppt('${a.id}')"><i class="bi bi-x-circle"></i></button></td>`;
+      body.appendChild(tr);
+    });
+  }
+  renderSlots();
+}
+async function schedule(){
+  const pid = document.getElementById('selPatient').value;
+  const did = document.getElementById('selDoctor').value;
+  const date = document.getElementById('apptDate').value.trim();
+  const time = document.getElementById('apptTime').value.trim();
+  if(!pid || !did || !date || !time) return alert('All fields required');
+  const datetime = `${date} ${time}`;
+  document.getElementById('scheduleBtn').disabled = true;
+  await fetchJson('/appointments', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({patient_id: pid, doctor_id: did, datetime})});
+  document.getElementById('apptDate').value='';
+  document.getElementById('apptTime').value='';
+  document.getElementById('scheduleBtn').disabled = false;
+  showToast('Appointment scheduled', 'success');
+  loadAll();
+}
+function fmtDate(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function renderSlots(){
+  const pid = document.getElementById('selPatient').value;
+  const did = document.getElementById('selDoctor').value;
+  const body = document.querySelector('#slotsTable tbody');
+  body.innerHTML = '';
+  const times = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00'];
+  const days = 7;
+  const start = new Date();
+  for(let i=0;i<days;i++){
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i);
+    const ds = fmtDate(d);
+    const tr = document.createElement('tr');
+    const left = document.createElement('td');
+    left.textContent = ds;
+    const right = document.createElement('td');
+    const wrap = document.createElement('div');
+    wrap.className = 'd-flex flex-wrap gap-2';
+    times.forEach(t=>{
+      const dt = `${ds} ${t}`;
+      const booked = appts.some(a=> a.doctor_id===did && a.datetime===dt);
+      const btn = document.createElement('button');
+      btn.className = `btn btn-sm ${booked? 'btn-secondary':''}`;
+      btn.textContent = t;
+      btn.disabled = !pid || !did || booked;
+      btn.onclick = async ()=>{
+        try{
+          await fetchJson('/appointments', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({patient_id: pid, doctor_id: did, datetime: dt})});
+          showToast('Appointment scheduled','success');
+          loadAll();
+        }catch(e){ showToast(e.message || 'Failed','danger'); }
+      };
+      wrap.appendChild(btn);
+    });
+    right.appendChild(wrap);
+    tr.appendChild(left);
+    tr.appendChild(right);
+    body.appendChild(tr);
+  }
+}
+document.getElementById('scheduleBtn').addEventListener('click', schedule);
+document.getElementById('selPatient').addEventListener('change', renderSlots);
+document.getElementById('selDoctor').addEventListener('change', renderSlots);
+loadAll();
+async function deleteAppt(id){
+  if(!confirm('Cancel appointment?')) return;
+  await fetchJson(`/appointments/${id}`, {method:'DELETE'});
+  showToast('Appointment cancelled', 'warning');
+  loadAll();
+}
+document.getElementById('scheduleBtn').addEventListener('click', schedule);
+</script>
+</body>
+</html>
